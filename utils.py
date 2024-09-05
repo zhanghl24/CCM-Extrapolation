@@ -9,6 +9,7 @@ class Scatter_info():
     
     def __init__(self, roughness_table, em_prop_table, tile_length, tile_width, transform):
         '''
+        Describe a single scatter.
         roughness_table: Record roughness parameter in different regions.
         em_prop_table: Record complex permittivity in different regions.
         tile_length: 1*1 float. Length of single tile.
@@ -36,12 +37,13 @@ class Scatter_info():
         return tf.gather(roughness, mat_type_table), tf.gather(em_prop, mat_type_table)
     
 class Em_property():
-    def __init__(self, scatter_infos, id_hash):
+    def __init__(self, scatter_infos, id_map):
         '''
+        Defines all em parameters in the propagation scene.
         scatter_infos: dicts contains k [object_id, Scatter_info] pairs. k is the number of scatters.
         id_hash: map object_id to the indice of the same scatterer in scatter_infos.
         '''
-        self.id_hash = id_hash
+        self.id_map = id_map
 
         self.table_shape = np.zeros((len(scatter_infos), 2),dtype=np.int32)
         self.tile_size = np.zeros((len(scatter_infos), 2),dtype=np.float32)
@@ -123,21 +125,20 @@ class Em_property():
                                               constant_values=-1)
         self.roughness_table = tf.stack(roughness_table_list)
         
-class Combined_scatter(Layer):
+class Scatter(Layer):
     '''
-    modified from Continuous_scatter.
-    Only used for scene "Combined_scatter".
+    For a scatter surface composed of multiple materials, this callable 
+    class specifies the roughness distribution on its surface.
     '''
     def __init__(self, em_property): 
-        super(Combined_scatter, self).__init__()
+        super(Scatter, self).__init__()
         self.em_property = em_property
         
     def build(self, input_shape):
         return 0
     
     #@tf.function(jit_compile=True)
-    def call(self, object_id, points, k_i, k_s, n_hat): #only tested on SISO case
-        # em_property应为列表，根据object_id选择下一行应该调用哪个元素；下一行输入的points应该事先经过旋转
+    def call(self, object_id, points, k_i, k_s, n_hat): 
         alpha_r = self.em_property(points, object_id, "scat")
         t_r = alpha_r ** 0.5 * (1.6988 * alpha_r ** 2 + 10.8438 * alpha_r)\
               / (alpha_r ** 2 + 6.2201 * alpha_r + 10.2415)
@@ -154,9 +155,13 @@ class Combined_scatter(Layer):
         f_s = tf.reshape(f_s, object_id.shape)
         return f_s
     
-class Combined_radio_material(Layer):
+class Radio_material(Layer):
+    '''
+    For a scatter surface composed of multiple materials, this callable 
+    class specifies the complex permittivity distribution on its surface.
+    '''
     def __init__(self, em_property):
-        super(Combined_radio_material, self).__init__()
+        super(Radio_material, self).__init__()
         self.em_property = em_property
     
     def build(self, input_shape):
@@ -175,6 +180,9 @@ def cal_size(scatter_length, scatter_width, corr_len):
     return tile_row, tile_colomn, tile_length, tile_width
 
 def cal_R(tile_row, tile_colomn, tile_length, tile_width, corr_len):
+    '''
+    calculate correlation matrix used in scatterer modeling.
+    '''
     tile_num = tile_row * tile_colomn
     tile_length = tf.constant(tile_length, dtype=tf.float32)
     tile_width = tf.constant(tile_width, dtype=tf.float32)
