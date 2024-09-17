@@ -98,7 +98,7 @@ class Em_property():
         shape = object_ids.shape
         points = tf.reshape(points, [-1, 3])
         object_ids = tf.reshape(object_ids, [-1])  
-        object_ids = tf.gather(self.id_hash, object_ids)
+        object_ids = tf.gather(self.id_map, object_ids)
         shift = tf.gather(self.shift, object_ids)
         rotmat = tf.gather(self.rotmat, object_ids)
         points = tf.matmul(rotmat, tf.expand_dims(points - shift, axis=-1))
