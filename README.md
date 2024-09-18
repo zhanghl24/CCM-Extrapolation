@@ -1,5 +1,7 @@
 # Channel Correlation Matrix Extrapolation Based on Roughness Calibration of Scatterers
 This repo contains the source code to reproduce results in the paper"Channel Correlation Matrix Extrapolation Based on Roughness Calibration of Scatterers".
+
+Paper link: https://arxiv.org/abs/2409.10900
 ## Setup
 Packages required to run the code are listed below:
 - python 3.11.9
